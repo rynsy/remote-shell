@@ -1,3 +1,5 @@
 *.o
 *.s
 echo.c
+rrsh-client
+rrsh-server

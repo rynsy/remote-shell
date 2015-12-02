@@ -1,7 +1,7 @@
 /*
- * echoclient.c - An echo client
+ * rrshclient.c - a Restricted Remote Shell client
  */
-/* $begin echoclientmain */
+/* $begin rrshclientmain */
 #include "csapp.h"
 
 int main(int argc, char **argv) 
@@ -28,4 +28,4 @@ int main(int argc, char **argv)
     Close(clientfd); //line:netp:echoclient:close
     exit(0);
 }
-/* $end echoclientmain */
+/* $end rrshclientmain */
