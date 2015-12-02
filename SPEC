@@ -1,0 +1,452 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2008 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>CS 485
+(Fall 2015) Project 4: Restricted Remote Shell
+Due Date: Friday, December 4, 2015</TITLE>
+<META NAME="description" CONTENT="CS 485
+(Fall 2015) Project 4: Restricted Remote Shell
+Due Date: Friday, December 4, 2015">
+<META NAME="keywords" CONTENT="project">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="project.css">
+
+</HEAD>
+
+<BODY >
+
+<P>
+<H1 ALIGN="CENTER">CS 485
+<BR>(Fall 2015)
+<BR> 
+<BR>
+Project 4: Restricted Remote Shell
+<BR>
+Due Date: Friday, December 4, 2015</H1>
+<DIV CLASS="author_info">
+
+</DIV>
+
+<P>
+<BR>
+
+<P>
+
+<H1><A NAME="SECTION00010000000000000000">
+Introduction</A>
+</H1>
+
+<P>
+Networks have long provided users with the ability to access and control
+remote computers through remote shells.  Examples include rsh, telnet, and
+ssh.  Each has different features and security characteristics.  The remote
+machine (i.e., the machine being controlled) runs a server process that
+accepts connections, reads the user's identity over the TCP connection,
+verifies that user is allowed to access the system, sends a response over the
+TCP connection to say it is ready for commands.  It then repeatedly reads input
+from the user and returns output from the commands
+until the session ends (e.g., the user types <SPAN  CLASS="textit">quit</SPAN>).
+The user's machine runs a client application that initiates a connection to
+the remote server, sends the user's name and password and then waits for the server
+to send back a message granting access.  It then reads input from the user,
+sends it to the remote server to be executed, and then waits for the
+server to send back the command's output, at which point it
+starts the process all over again.
+
+<P>
+In this project you will implement a very simple, and far more restrictive,
+remote shell.  You will write a Restricted Remote Shell server (called
+<SPAN  CLASS="textit">rrsh-server</SPAN>).  It limits/restricted access in two ways.
+First, your rrsh-server will wait for users to connect and then will consult a
+configuration file (<SPAN  CLASS="textit">rrshusers.txt</SPAN>) to verify that the user is allowed to
+access the rrsh-server.  Second, the rrsh-server will verify that
+the commands typed by the user are allowed commands.  In
+particular, the rrsh-server will look in a configuration file called
+<SPAN  CLASS="textit">rrshcommands.txt</SPAN> for a list of allowable programs (commands) that can be
+run.  Commands that are not in the list will be denied by your rrsh server.
+
+<P>
+You will also write the
+<SPAN  CLASS="textit">rrsh-client</SPAN> program.  The rrsh-client program will read commands from
+the user's terminal and then pass them on to the rrsh-server to be executed
+on the remote machine.
+
+<P>
+The goal of this project is to help you understand the 
+basics about network programming.
+Your code for this project must be written in C or C++ and must use the
+native Unix TCP/IP socket interface (i.e., socket calls) or the RIO library
+calls provided by the textbook
+(e.g., <SPAN  CLASS="textit">open_clientfd, open_listenfd, Rio_writen,   Rio_readnb</SPAN>)
+which can be found on in the files csapp.c and
+csapp.h on the book's code web page:
+<BLOCKQUOTE>
+<A NAME="tex2html1"
+  HREF="http://csapp.cs.cmu.edu/public/code.html">http://csapp.cs.cmu.edu/public/code.html</A>
+
+</BLOCKQUOTE>
+
+<P>
+
+<H1><A NAME="SECTION00020000000000000000">
+Groups</A>
+</H1>
+
+<P>
+It is expected that you will work in groups of two on this
+project.  You may select your own partner for this project.
+You may also decide to work alone on the project, but you must still do the entire
+project (i.e., there is no reduction in the amount of work you must do).
+
+<P>
+
+<H1><A NAME="SECTION00030000000000000000">
+The rrsh-server</A>
+</H1>
+
+<P>
+Your rrsh-server should listen for incoming TCP connections using the
+IPaddress INADDR_ANY and a <SPAN  CLASS="textit">TCPport</SPAN> number specified
+as a command line parameter to your rrsh-server.  Your rrsh-server will be
+invoked with the command
+<DIV ALIGN="CENTER">
+./rrsh-server <SPAN  CLASS="textit">TCPport</SPAN>
+
+</DIV>
+where <SPAN  CLASS="textit">TCPport</SPAN> is the port number where your rrsh-server will listen for
+incoming connections.
+See the example echo server from the notes and textbook as an example
+of how to create a server listening on a particular TCP port.
+
+<P>
+Your rrsh-server will read two config files from the current working directory at startup:
+
+<OL>
+<LI><SPAN  CLASS="textit">rrshusers.txt</SPAN> contains a list of users that are allowed to access
+  the server.  The file contains one user per line, where a user
+  is specified by their <SPAN  CLASS="textit">username</SPAN> and <SPAN  CLASS="textit">password</SPAN> (separated by
+  one or more space characters).  Blank lines should be ignored.
+</LI>
+<LI><SPAN  CLASS="textit">rrshcommands.txt</SPAN> contains a list of commands (i.e., executable programs) that
+  users may execute.  The file contains one command (program) per line.
+  Programs are specified using the file's full path name (e.g., /bin/ls).
+  No parameters are allowed.  Blank lines should be ignored.
+</LI>
+</OL>
+
+<P>
+The ``login protocol'' used by the rrsh-client to access the
+rrsh-cserver will exchange the following information:
+
+<UL>
+<LI>The client sends the user's <SPAN  CLASS="textit">username</SPAN> followed by '<code>\n</code>'.
+</LI>
+<LI>The client then sends the user's <SPAN  CLASS="textit">password</SPAN> followed by '<code>\n</code>'.
+</LI>
+<LI>The server will respond with either ``Login Approved<code>\n</code>'' or ``Login Failed<code>\n</code>''.
+  If the login failed, the server will close the connection.
+</LI>
+</UL>
+Usernames and passwords can be up to 40 characters long.
+The server will only accept and handle commands for one user at
+at time (i.e., only one user can be ``logged in'' at any given time).
+
+<P>
+After a user has successfully ``logged in'' to the server, the client will
+begin sending commands to the server.  Each command can be up to 128
+characters long and will end with '<code>\n</code>'.
+The server will parse the command to determine what program to run
+- the program will be the first token on the command line.  It will check to see
+that the requested program is listed in the 
+<SPAN  CLASS="textit">rrshcommands.txt</SPAN> files.  If the command is not allowed (i.e., cannot
+be found in the <SPAN  CLASS="textit">rrshcommands.txt</SPAN> file), the rrsh-server will return
+(i.e., send) the string
+``Cannot execute '<SPAN  CLASS="textit">program</SPAN>' on this server<code>\n</code>'',
+where <SPAN  CLASS="textit">program</SPAN> is the name of the executable
+program (file) that was not found in the
+<SPAN  CLASS="textit">rrshcommands.txt</SPAN> file.
+The server will then fork() and exec() a child to handle the user's command
+and will perform the necessary dup() operations to make standard output flow
+over the TCP connection back to the rrsh-client program.
+When the child process terminates, the rrsh-server (parent process) will send
+the string
+``RRSH COMMAND COMPLETED<code>\n</code>''   
+to the rrsh-client, so that the client will know that the command finished
+and it can now send another command.
+
+<P>
+Your rrsh-server (i.e., the parent process) should print out the following
+information to the terminal (standard output):
+
+<UL>
+<LI>For login requests, print the following lines:
+     
+<UL>
+<LI>``User <SPAN  CLASS="textit">username</SPAN> logging from <SPAN  CLASS="textit">IPaddr</SPAN> at TCP port <SPAN  CLASS="textit">PortNumber</SPAN>.''
+       where <SPAN  CLASS="textit">username</SPAN> is the name of the user attempting to login,
+       <SPAN  CLASS="textit">IPaddr</SPAN> is the source IP address of the connection, and
+       <SPAN  CLASS="textit">PortNumber</SPAN> is the TCP source port number.
+</LI>
+<LI>If the login is successful, print ``User <SPAN  CLASS="textit">username</SPAN>
+       successfully logged in.''
+</LI>
+<LI>If the login failed, print ``User <SPAN  CLASS="textit">username</SPAN> denied access.''
+     
+</LI>
+</UL>
+</LI>
+<LI>For commands sent by the rrsh-client, print the following for each command:
+     
+<UL>
+<LI>``User <SPAN  CLASS="textit">username</SPAN> sent the command '<SPAN  CLASS="textit">CommandLine</SPAN>' to be executed.''
+       where <SPAN  CLASS="textit">username</SPAN> is the name of the user that is logged in, and
+       <SPAN  CLASS="textit">CommandLine</SPAN> is the command string the user sent to the rrsh-server.
+</LI>
+<LI>If the command is allowed (i.e., is found in the <SPAN  CLASS="textit">rrshcommands.txt</SPAN>
+       file), print ``Forking/Execing the command '<SPAN  CLASS="textit">CommandLine</SPAN>' on behalf of
+       <SPAN  CLASS="textit">username</SPAN>.''
+</LI>
+<LI>If the command is not allowed, print ``The command '<SPAN  CLASS="textit">CommandLine</SPAN>' is not allowed.''
+       to standard output, and send the string 
+       ``Cannot execute '<SPAN  CLASS="textit">program</SPAN>' on this server<code>\n</code>'',
+       over the TCP connection (where <SPAN  CLASS="textit">program</SPAN> is the name of the executable
+       program (file) that cannot be run on this server.
+     
+</LI>
+</UL>
+</LI>
+<LI>When the TCP connection is terminated, print the following lines:
+     
+<UL>
+<LI>``User <SPAN  CLASS="textit">username</SPAN> disconnected.'' where <SPAN  CLASS="textit">username</SPAN> is the name of the user.
+     
+</LI>
+</UL>
+</LI>
+</UL>
+
+<P>
+
+<H1><A NAME="SECTION00040000000000000000">
+The rrsh-client</A>
+</H1>
+
+<P>
+You will also write the code for the rrsh-client program.  You will invoke
+the rrsh-client program with the following command line arguments:
+<DIV ALIGN="CENTER">
+./rrsh-client <SPAN  CLASS="textit">MachineName</SPAN> <SPAN  CLASS="textit">TCPport</SPAN>
+
+</DIV>
+where the <SPAN  CLASS="textit">MachineName</SPAN> specifies the DNS name <B>or</B> the IP address (in dotted
+decimal format) where the rrsh-server is running,
+and <SPAN  CLASS="textit">TCPport</SPAN> is the port number where the rrsh-server
+is listening.
+
+<P>
+Your rrsh-client program with then prompt the user for a username, and then
+for a password (printing each prompt on a new line).  Having read the user's
+response to these questions, the rrsh-client will establish a TCP connection
+to the rrsh-server and send the login information (as describe above).  If
+the login fails, the client will terminate. If the login succeeds, the
+rrsh-client will print the prompt '<code>rrsh &gt; </code>' and will read a command
+from the user.  It will then send the command (unmodified) to the rrsh-server and wait for
+the output from the command.  When the command completes, your rrsh-client will
+receive the string
+``RRSH COMMAND COMPLETED<code>\n</code>'',
+which indicates the command finished.
+Note that the string
+``RRSH COMMAND COMPLETED<code>\n</code>''
+is not written to the client terminal.  This particular string is only to be
+read by the client, and should not be displayed to the user.
+At this point your rrsh-client will
+reissue the prompt, read another command, send it to the rrsh-server, etc.
+It will continue to process commands until the command entered by the user is
+'<code>quit</code>'.  When the rrsh-client reads a <code>quit</code> command, it will
+terminate.
+
+<P>
+
+<H1><A NAME="SECTION00050000000000000000">
+Getting Started</A>
+</H1>
+
+<P>
+We recommend that you start by modifying the echo client and server provided
+in the notes and in the textbook.  You can find a copy of the code online
+under the directory ``netp'' on the web page:
+<BLOCKQUOTE>
+<A NAME="tex2html2"
+  HREF="http://csapp.cs.cmu.edu/public/code.html">http://csapp.cs.cmu.edu/public/code.html</A>
+
+</BLOCKQUOTE>
+
+<P>
+You will need to modify the client and server to talk the rrsh protocol
+described above.  You will also need to add code to read the configuration
+files, and then check the login username against the <SPAN  CLASS="textit">rrshusers.txt</SPAN>
+configuration file on each login, and the command against the
+<SPAN  CLASS="textit">rrshcommands.txt</SPAN> configuration file on each command.
+
+<P>
+
+<H1><A NAME="SECTION00060000000000000000">
+Testing your rrsh-client and rrsh-server</A>
+</H1>
+
+<P>
+Your code must compile and run on your VM.  If you want to write your code on
+another machine and port it to your VM later, that is up to you, but it is
+your responsibility to get the code running on your VM before you submit it.
+<B>You will not receive any credit if your code does not run on your VM - even it
+it runs elsewhere.</B>
+
+<P>
+You can run both your server and your client on your VM.
+If you would like to run your rrsh-client on other
+machines to be sure it works from anywhere in the Internet,
+you can run your rrsh-client on the multilab machines (they are
+similar enough to your VMs so that your code should run there without
+problems). 
+
+<P>
+An example rrsh-client session might look like
+the following:
+
+<P>
+<PRE>
+  bash $ ./rrsh-client 127.0.0.1 4850
+  Username: testuser
+  Password: LetMeIn
+  Login Approved
+  rrsh &gt; /bin/ls /tmp
+  config-err-gUsMxg  config-err-I4qlYd  qt_temp.jd2802  qt_temp.jd4494
+  rrsh &gt; /bin/cat /etc/issue
+  Ubuntu 14.04.3 LTS \n \l
+
+  rrsh &gt; /bin/grep 14 /etc/issue
+  Cannot execute '/bin/grep' on this server
+  rrsh &gt; quit
+  bash $ ./rrsh-client 127.0.0.1 4850
+  Username: testuser
+  Password: WrongPassword
+  Login Failed
+  bash $
+</PRE>
+
+<P>
+A corresponding server session might look like the following:
+
+<P>
+<PRE>
+  bash $ ./rrsh-server 4850
+  User testuser logging in from 192.168.128.9 at TCP port 9648.
+  User testuser successfully logged in.
+  User testuser sent the command '/bin/ls /tmp' to be executed.
+  Forking/Execing the command '/bin/ls /tmp' on behalf of testuser.
+  User testuser sent the command '/bin/cat /etc/issue' to be executed.
+  Forking/Execing the command '/bin/cat /etc/issue' on behalf of testuser.
+  User testuser sent the command '/bin/grep 14 /etc/issue' to be executed.
+  The command '/bin/grep 14 /etc/issue' is not allowed.
+  User testuser disconnected.
+  User testuser logging in from 192.168.128.9 at TCP port 9648.
+  User testuser denied access.
+  ^C
+  bash $
+</PRE>
+
+<P>
+The example configuration files that would go with the above session could be:
+
+<P>
+
+<SPAN ID="txt763">rrshusers.txt</SPAN>
+<PRE>
+  testuser LetMeIn
+  cs485user p4password
+</PRE>
+
+<P>
+
+<SPAN ID="txt768">rrshcommand.txt</SPAN>
+<PRE>
+  /bin/ls
+  /bin/cat
+  /bin/wc
+</PRE>
+
+<P>
+
+<H1><A NAME="SECTION00070000000000000000">
+What to Submit</A>
+</H1>
+
+<P>
+<B>*** Your code must compile and run on the Ubuntu VM that you have
+  been assigned or you will receive no credit.</B>
+
+<P>
+Only one person from your group should submit the code. Consequently it is
+important the you remember to list both people from your group in the README
+file.
+
+<P>
+You will submit all your code plus a documentation file.  You should <B>not</B>
+submit .o files or other binary files.
+To create your submission, tar and compress all files that you are submitting
+(e.g., tar czf proj4.tgz projectdirectory).  
+You should submit the following:
+
+<UL>
+<LI>README file - listing all the files you think you are submitting
+  along with your names.  <SPAN  CLASS="textit">Do not forget to list both people in your
+    group, otherwise we will assume it was an individual project</SPAN>.
+</LI>
+<LI>Documentation file - brief description of your projet including
+the algorithms you used.
+Your documentation file should also include a description of any
+special features or limitations of your shell.  If you do not document a
+limitation, we will assume you did not know about it - and thus it will be
+considered a bug.  The documentation file must be a text file.
+<SPAN  CLASS="textit">Do not submit MS Word, postscript, or PDF files</SPAN>.
+</LI>
+<LI>Makefile - we will type 'make', and we expect make will compile your
+  program
+</LI>
+<LI>all your C/C++ files
+</LI>
+<LI>all your header files
+</LI>
+</UL>
+
+<P>
+Once you create the text file, go to
+<A NAME="tex2html3"
+  HREF="https://www.cs.uky.edu/csportal">https://www.cs.uky.edu/csportal</A>
+to upload your file.
+
+<P>
+Note, you may upload your .tgz file as many times as you like.  
+Note that the system timestamps
+your submission with the date/time of the last submission.  The system
+does allow late submissions (which will be charged a late penalty).
+
+<P>
+<BR><HR>
+<ADDRESS>
+James Griffioen
+2015-11-23
+</ADDRESS>
+</BODY>
+</HTML>
