@@ -4,7 +4,7 @@ CFLAGS = -Wall -g
 INCLUDES = -I.
 LIBS = -lpthread -ldl
 SRCS = rrshserver.c parse.c login.c csapp.c 
-OBJS = rrshserver.o parse.o login.o csapp.o 
+OBJS = rrshserver.o parse.o login.o csapp.o
 EXE = rrsh-server
 
 all:	$(EXE)

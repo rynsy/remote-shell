@@ -5,13 +5,16 @@
 #include "csapp.h"
 #include "rrshserver.h"
 
+char* usersFile = "rrshusers.txt";
+char* cmdsFile = "rrshcommands.txt";
 //void echo(int connfd);
 void login(int connfd);
 
 void parseUsers(user_cred* userList);
 void parseCmd(char** cmdList);
+void destroy_uc(user_cred* user);
 
-int main(int argc, char **argv) 
+int mainLoop(int argc, char **argv) 
 {
     int listenfd, connfd, port;
     socklen_t clientlen;
@@ -39,5 +42,17 @@ int main(int argc, char **argv)
         Close(connfd);
     }
     exit(0);
+}
+
+int main( int argc, char** argv ) {
+   int i = 0; 
+   user_cred* userList[MAXUSERS];
+   parseUsers(userList);
+   while(userList[i] != NULL) {
+    printf("(main) name: %s\t pass: %s\n", userList[i]->name, userList[i]->pass);
+    fflush(stdout);
+    i++;
+   }
+   exit(0);
 }
 /* $end rrshserverimain */
