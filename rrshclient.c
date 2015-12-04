@@ -27,6 +27,14 @@ int main(int argc, char **argv)
 	        Rio_writen(clientfd, buf, strlen(buf));
 	        Rio_readlineb(&rio, buf, MAXLINE);
 	        Fputs(buf, stdout);
+
+            //while commands/session
+            while( Fgets(buf, MAXLINE, stdin) != NULL) {
+	            Rio_writen(clientfd, buf, strlen(buf));
+    	        Rio_readlineb(&rio, buf, MAXLINE);
+	            Fputs(buf, stdout);
+            }
+
         }
     }
     Close(clientfd); //line:netp:echoclient:close

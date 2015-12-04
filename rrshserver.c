@@ -16,6 +16,7 @@ int validate(char* uName, char* uPass, user_cred** userList, int* uNum);
 void create_ul(int* uNum, user_cred** userList);
 void destroy_ul(int* uNum, user_cred** userList);
 void create_cl(int* cNum, char** cmdList);
+void echo(int connfd);
 
 int main(int argc, char **argv) 
 {
@@ -49,7 +50,8 @@ int main(int argc, char **argv)
         printf("server connected to %s (%s)\n", hp->h_name, haddrp);
         if(login(connfd, userList, &uNum)) {
             ACCEPT_CONN = 0;
-            //We're live, baby    
+            //We're live, baby
+            echo(connfd);
         }
         Close(connfd);
     }
