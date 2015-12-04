@@ -3,8 +3,8 @@ CC = gcc
 CFLAGS = -Wall -g
 INCLUDES = -I.
 LIBS = -lpthread -ldl
-SRCS = rrshserver.c parse.c login.c csapp.c 
-OBJS = rrshserver.o parse.o login.o csapp.o
+SRCS = rrshserver.c eval.c parse.c login.c csapp.c 
+OBJS = rrshserver.o eval.o parse.o login.o csapp.o
 EXE = rrsh-server
 
 all:	$(EXE)

@@ -8,10 +8,11 @@
 int ACCEPT_CONN = 1;
 char* usersFile = "rrshusers.txt";
 char* cmdsFile = "rrshcommands.txt";
+user_cred* userList[MAXUSERS];
 
 //void echo(int connfd);
 int login(int connfd, user_cred** list, int* num);
-int validate(char* uName, char* uPass, user_cred** userList, int* uNum);
+void eval(int connfd, char** cmdList, int* num);
 
 void create_ul(int* uNum, user_cred** userList);
 void destroy_ul(int* uNum, user_cred** userList);
@@ -26,7 +27,6 @@ int main(int argc, char **argv)
     struct hostent *hp;
     char *haddrp;
     char* cmdList[MAXCMD];
-    user_cred* userList[MAXUSERS];
     int uNum = 0, cNum = 0;
 
     create_ul(&uNum, userList);
@@ -40,9 +40,10 @@ int main(int argc, char **argv)
 
     listenfd = Open_listenfd(port);
     while (1) {
+        if(ACCEPT_CONN) {
         clientlen = sizeof(clientaddr);
         connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
-
+        
         /* Determine the domain name and IP address of the client */
         hp = Gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr, 
         sizeof(clientaddr.sin_addr.s_addr), AF_INET);
@@ -51,9 +52,10 @@ int main(int argc, char **argv)
         if(login(connfd, userList, &uNum)) {
             ACCEPT_CONN = 0;
             //We're live, baby
-            echo(connfd);
+            eval(connfd, cmdList, &cNum);
         }
         Close(connfd);
+        }
     }
     destroy_ul(&uNum, userList);
     exit(0);
