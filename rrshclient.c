@@ -3,6 +3,31 @@
  */
 /* $begin rrshclientmain */
 #include "csapp.h"
+#include "rrshserver.h"
+
+char confirm[MAXNAME] = "RRSH COMMAND COMPLETED\n";
+char* prompt = "rrsh > ";
+
+void shell(int clientfd, rio_t* rio) 
+{
+    char buf[MAXLINE];
+   
+    memset(buf,'\0',sizeof(buf));
+    printf("%s", prompt);
+    while( Fgets(buf, MAXLINE, stdin) != NULL ) {
+        if( !strcmp(buf, "quit\n") ) {
+            return ;   
+        }
+        Rio_writen(clientfd, buf, strlen(buf));
+        Rio_readlineb(rio, buf, MAXLINE);
+        while( strcmp(buf, confirm) != 0 ) {
+            Fputs(buf, stdout);
+            Rio_readlineb(rio, buf, MAXLINE);
+        }
+        printf("%s", prompt);
+        fflush(stdout);
+    }
+}
 
 int main(int argc, char **argv) 
 {
@@ -26,15 +51,11 @@ int main(int argc, char **argv)
         if(Fgets(buf, MAXLINE, stdin) != NULL) {
 	        Rio_writen(clientfd, buf, strlen(buf));
 	        Rio_readlineb(&rio, buf, MAXLINE);
-	        Fputs(buf, stdout);
-
-            //while commands/session
-            while( Fgets(buf, MAXLINE, stdin) != NULL) {
-	            Rio_writen(clientfd, buf, strlen(buf));
-    	        Rio_readlineb(&rio, buf, MAXLINE);
-	            Fputs(buf, stdout);
+            if( !strcmp(buf, "Login Approved\n") ) {
+                shell(clientfd, &rio); 
+            } else {
+                printf("Login Failed\n");
             }
-
         }
     }
     Close(clientfd); //line:netp:echoclient:close

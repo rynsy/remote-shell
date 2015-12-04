@@ -4,9 +4,11 @@
 
 int ACCEPT_CONN;
 int uid; // id of currently logged in user. Better way of doing this, I'm sure
+char confirm[MAXNAME];
 
 char* usersFile;
 char* cmdsFile;
+char* prompt;
 
 typedef struct user_cred {
     char* name;
@@ -14,3 +16,4 @@ typedef struct user_cred {
 } user_cred;
 
 user_cred* userList[MAXUSERS];
+char* cmdList[MAXCMD];

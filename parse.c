@@ -25,20 +25,40 @@ void destroy_uc(user_cred* data)
     Free(data);
 }
 
-void destroy_ul(user_cred** users, int num)
+void destroy_ul(user_cred** users, int* num)
 {
     int i = 0;
-    while( i < num ) {
+    while( i < *num ) {
         destroy_uc(users[i]);
+        i++;
+    }
+}
+
+void destroy_cl(char** cmds, int* num)
+{
+    int i = 0;
+    while( i < *num ) {
+        Free(cmds[i]);
         i++;
     }
 }
 
 void parseTokens(char* buf, int* argc, char** argv)
 {
+
     char* bptr;
     int intoken = 0;
-    bptr = buf;
+    
+    if( *argc > 0 ) {
+        bptr = argv[0];
+        memset(bptr, '\0', MAXBUF);
+        *argc = 0;
+    } //If argv has elements, reuse the memory.
+    else {
+        bptr = (char*)Malloc(MAXBUF);
+    }
+    
+    memcpy(bptr, buf, MAXBUF);
     while( (*bptr) != EOF && (*bptr) != NULL ) {
         if( IsWhiteSpace(*bptr) || IsNewLine(*bptr) ) {
             intoken = 0;
@@ -60,7 +80,7 @@ void parseTokens(char* buf, int* argc, char** argv)
     argv[(*argc)] = NULL;
 }
 
-void create_ul(int* userNum, user_cred** userList) 
+void create_ul(user_cred** userList, int* userNum) 
 {
     int fd, argc, i;
     char buf[MAXBUF];
@@ -91,7 +111,7 @@ void create_ul(int* userNum, user_cred** userList)
 
 
 
-void create_cl(int* cmdNum, char** cmdList)
+void create_cl(char** cmdList, int* cmdNum)
 {
     int fd;
     char buf[MAXBUF]; 
