@@ -1,6 +1,8 @@
 #define MAXNAME 40
 #define MAXUSERS 10
 #define MAXCMD 10
+
+int ACCEPT_CONN;
 char* usersFile;
 char* cmdsFile;
 
